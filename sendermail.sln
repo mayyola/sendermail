@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1209
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sendermail", "sendermail\sendermail.csproj", "{9C02AEAC-21C8-48D3-828D-A34196A159B7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9F648555-9039-4F7E-AA09-A43F882EB192}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SendmailTool", "SendmailTool\SendmailTool.csproj", "{D691809B-0CF7-4BC0-A718-F536689C2C65}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9C02AEAC-21C8-48D3-828D-A34196A159B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C02AEAC-21C8-48D3-828D-A34196A159B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C02AEAC-21C8-48D3-828D-A34196A159B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C02AEAC-21C8-48D3-828D-A34196A159B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D691809B-0CF7-4BC0-A718-F536689C2C65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D691809B-0CF7-4BC0-A718-F536689C2C65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D691809B-0CF7-4BC0-A718-F536689C2C65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D691809B-0CF7-4BC0-A718-F536689C2C65}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EBF1425E-46AE-427D-BE1C-76C2B77096EF}
+	EndGlobalSection
+EndGlobal
