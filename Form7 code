@@ -1,0 +1,397 @@
+using System;
+using System.ComponentModel;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
+using System.Net;
+using mshtml;
+//MailKit的套件
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+//MailKit的套件
+using SendmailTool;
+using Editor;
+
+
+namespace sendermail
+{
+
+
+    public partial class Form7 : Form
+    {
+       // SmtpClient SmtpServer; //這兩項好像沒用
+      //  NetworkCredential login;
+        FunctionTool FunctionTool = new FunctionTool();  //343
+
+        public Form7() //建構子??
+        {
+            InitializeComponent();
+
+        }
+
+
+        public string Sendname //寄件者名字
+
+        {
+            get; set;
+
+        }
+
+        public string Senderemail //寄件者email
+
+        {
+            get; set;
+        }
+
+        public string Mailsmtp //寄件者Smtp
+
+        {
+            get; set;
+        }
+
+        public string Mailaccount //寄件者帳號
+
+        {
+            get; set;
+        }
+
+        public string Mailpw //寄件者密碼
+
+        {
+            get; set;
+        }
+
+
+        public class Submethod  //附件類別
+        {
+            public void Attachment(Form7 f2) //建構函式 方法
+            {
+                long totalsize = 0;
+                OpenFileDialog file = new OpenFileDialog(); //開啟視窗
+                file.Multiselect = true; //允許一起或同時選取多個檔案
+                file.Title = "開啟";
+                if (file.ShowDialog() == DialogResult.OK)
+                {
+                    String[] filename = file.FileNames;
+
+                    foreach (string item in filename)
+                    {
+                        totalsize += new FileInfo(item).Length;
+
+                        f2.Attlist.Items.Add(item + "(" + (new FileInfo(item).Length / 1024).ToString() + "kB)"); //增加到listbox
+                    }
+                    f2.label1.Text = (totalsize + Convert.ToInt64(f2.label1.Text)).ToString();//只有增加沒辦法減少
+                    if (Convert.ToInt64(f2.label1.Text) > 15000000)
+                    {
+                        MessageBox.Show("總檔案超過20M,請刪除附件");
+                    }
+
+                }
+
+            }
+
+            public void Receiver(Form7 f2)
+            {
+                Form8 form8 = new Form8();
+                form8.Owner = f2;
+                form8.ShowDialog();
+            }
+
+        }
+
+        bool IsValidEmail(string email) //認證email
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void AttachBn_Click(object sender, EventArgs e) //按鈕附件加入
+        {
+            Form7 fm1 = this;
+            Submethod Obj = new Submethod();
+            Obj.Attachment(fm1);
+        }
+
+        private void AttachLabel_Click(object sender, EventArgs e) //label附件加入
+        {
+            Form7 fm1 = this; // 將變數fm1,this(指向自己)物件
+            Submethod Obj = new Submethod(); //自己寫的類別 在這個cs裡
+            Obj.Attachment(fm1); //將fm1的物件當作參數傳遞給建構函式，將物件fm1的欄位指派給obj的相對欄位
+
+        }
+
+        private void Attlist_KeyDown(object sender, KeyEventArgs e) //附件刪除
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+
+                try
+                {
+                    string path = Attlist.SelectedItem.ToString();
+                    int index = path.LastIndexOf('(');
+                    string patha = path.Substring(0, index);
+                    FileInfo myFileInfo = new FileInfo(patha);
+                    label1.Text = (Convert.ToInt64(label1.Text) - myFileInfo.Length).ToString();
+                    Attlist.Items.RemoveAt(Attlist.SelectedIndex);
+                    if (Convert.ToInt64(label1.Text) > 15000000)
+                    {
+
+                        MessageBox.Show("總檔案超過20M,請再刪除附件");
+
+                    }
+                }
+
+                catch (NullReferenceException ex)
+                {
+
+                    MessageBox.Show(ex.Message + "Attchment Exception");
+                }
+
+            }
+        }
+
+        private void AddBook_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Form7 fm1 = this;
+                Submethod Obj = new Submethod();
+                Obj.Receiver(fm1); //將fm1的物件當作參數傳遞給建構函式，將物件fm1的欄位指派給obj的相對欄位
+                                   // AddBook.Click -= AddBook_Click;
+            }
+
+            catch (Exception ex)
+            {
+
+            }
+        }
+        private string filename;
+
+        private void Hmtlbtn_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog file = new OpenFileDialog();
+            //file.Filter = "*.html|*.htm";
+            file.Multiselect = false;
+            file.Title = "開啟";
+            if (file.ShowDialog() == DialogResult.OK)
+            {
+                filename = file.FileName;
+
+                TabPage t = tabControl1.TabPages[1]; //跳到html的page
+                tabControl1.SelectTab(t);
+                foreach (WebBrowser webtab in this.tabpage2.Controls)
+                {
+                    webtab.Navigate(filename); //html載入
+                }
+            }
+
+
+        }
+
+
+
+        private void deleteButton7_Click(object sender, EventArgs e)
+        {
+            dataGridView1.Columns.Clear();
+
+        }
+
+        private async void SendemailButton1_Click(object sender, EventArgs e)
+        {
+            
+            try   //寄信例外
+            {
+                var Mymail = new MimeMessage(); //mailkit
+                var bodyBuilder = new BodyBuilder();
+                var client = new MailKit.Net.Smtp.SmtpClient(); //new 類別  
+                var smtpHostName = Param.Mailsmtp; // Mailsmtp.ToString().Trim(); //smtp server 這可能要選if else
+                int port = FunctionTool.porttype(smtpHostName);
+                var usessl = SecureSocketOptions.Auto; //選擇SSL or TLS
+                string address = null; //收件者地址變數
+                Mymail.From.Add(new MailboxAddress(Param.Sendname, Param.Senderemail)); //mailkit
+                Mymail.Subject = richTextBox1.Text;//主旨
+                client.Connect(smtpHostName, port, usessl); //方法
+                client.Authenticate(Param.Mailaccount, Param.Mailpw);
+              //  client.SslProtocols = 
+
+
+
+            foreach (var listBoxItem in Attlist.Items) //加入附件  listbox Attlist是名稱
+                {
+
+                    int index = listBoxItem.ToString().LastIndexOf('('); //檢查索引有幾個
+                    string Attment = listBoxItem.ToString().Substring(0, index); //listbox 附件的路徑名稱 例如 D:\使用者資料\桌面\S_31080452.jpg 
+                    //原來的bodyBuilder.Attachments.Add(Attment) outlook附件無法解析
+                    foreach (var param in bodyBuilder.Attachments.Add(Attment).ContentDisposition.Parameters) 
+                    //多的 ??真的嗎? outlook附件顯示未命名的附件 改成有中文的..懷疑..
+                    param.EncodingMethod = ParameterEncodingMethod.Rfc2047; //多的
+                }
+                
+                if (string.IsNullOrEmpty(richTextBox1.Text.Trim()))
+                    MessageBox.Show("請輸入信件主旨");
+                else if (Convert.ToInt64(label1.Text) > 15000000)
+                    MessageBox.Show("總檔案超過20M,請刪除附件");
+                else
+                {
+                    int i = 0;
+                    int f = 0;
+                    tableLayoutPanel1.Controls.Clear(); //清除用過的progressbar
+                    statusStrip1.Update();
+                    ProgressBar progressBar1 = new ProgressBar();
+                    progressBar1.Maximum = dataGridView1.Rows.Count; //row是橫列
+                    progressBar1.Minimum = 0;
+                    tableLayoutPanel1.Controls.Add(progressBar1);
+                    progressBar1.Dock = DockStyle.Fill;
+                    foreach (DataGridViewRow row in dataGridView1.Rows) //開始寄信
+                    {
+                        switch (tabControl1.SelectedIndex)
+                        {
+                            case 0:
+                                {
+                                    
+                                  
+                                    
+                                    ///圖片從list夾帶到email裡
+                                    var Mail_content = Editor.HtmlEditor.GetTextResult(); //白板的資料
+                                    foreach (string Filename_Base64 in HtmlEditor.GetBase64())
+                                    {
+                                      int index = HtmlEditor.GetBase64().IndexOf(Filename_Base64);
+                                      Mail_content = Mail_content.Replace("data:image/jpg;base64," + Filename_Base64, "cid:" + HtmlEditor.GetCid()[index]);  //圖路徑跟圖的cid放到內容裡
+                                    }
+                                    bodyBuilder.HtmlBody = Mail_content;
+
+                                    MessageBox.Show(Mail_content);
+                                    if (Clipboard.ContainsImage())   //應該可以刪除 1121111
+                              
+                                    {
+                                       foreach (string cid in HtmlEditor.GetCid())
+                                       {
+
+                                        var Message = bodyBuilder.LinkedResources.Add(string.Concat(Path.GetTempPath(), cid)); //路徑檔多張圖
+                                        Message.ContentId = cid; //QQ~~  //cid夾帶到郵件中
+
+
+                                       }
+                                    }
+                                }
+                                break;
+
+                            case 1:  //這邊有問題
+
+                                {
+                                    try
+                                    {
+                                        if (string.IsNullOrEmpty(filename)) { 
+                                            MessageBox.Show("請輸入信件內容");
+                                            return;
+                                        }
+                                        else
+                                        {
+                                            var webclient = new WebClient(); //載入html檔案
+                                             bodyBuilder.HtmlBody = webclient.DownloadString(filename);
+                                        }
+                                    }
+                                    catch
+                                    {
+
+                                    }
+                                }
+                                break;
+                        }
+
+                        for (int x = 1; x < dataGridView1.Columns.Count; x++) //取代文字 //通訊的表格取替換 直行 行的有幾個
+                        {
+
+                            bodyBuilder.HtmlBody = bodyBuilder.HtmlBody.Replace("[" + x + "]", row.Cells[x].Value.ToString().Trim());
+
+                        }
+
+                        
+                        if (comboBox1.SelectedIndex == 0) { //測試信件
+
+                            address =Param.Senderemail;
+                        }
+                        else { //正式信件
+
+                            address = row.Cells["電子郵件"].Value.ToString().Trim(); //正式寄信的address
+                        }
+                        if (IsValidEmail(address))
+                        {
+                             Mymail.To.Add(MailboxAddress.Parse(address)); //parse解析?
+                             Mymail.Bcc.Add(MailboxAddress.Parse(Param.Senderemail));
+                             Mymail.Body = bodyBuilder.ToMessageBody(); //這裡是bodybuilder包含attchment
+                             await client.SendAsync(Mymail); //非同步 寄信
+                             progressBar1.Value = row.Index + 1;  //成功記信封數
+                             i += 1;
+                             tssLabel.Text =string.Format("信件寄信成功數:{0}", i.ToString());
+                             Mymail.To.Clear();
+                        }
+
+                        else
+                        {
+                            f += 1;
+                            progressBar1.Value = row.Index + 1;  //失敗寄信封數
+                            tssLabel.Text+= $"  信件寄信失敗數:{f.ToString()}";
+                        }
+
+                    }
+                    //////刪圖
+                    /* foreach (IHTMLElement element in doc.all)
+                     {
+                         if (element.tagName =="IMG")
+                        {
+                             node =(IHTMLDOMNode) element;
+                             node.parentNode.removeChild(node);
+                        }
+
+
+                     }*/
+                    //////刪圖
+                    ///
+
+
+                    //  Param.Filename_Base64.Clear();
+                    // Param.Filename_cid.Clear();
+
+                    // SmtpServer.Dispose();  //??????
+
+                }
+            }
+    
+             catch (Exception ex)
+            {
+                  MessageBox.Show(ex.GetType().ToString());
+            }
+
+        }
+
+
+        private void toolStripButton6_Click(object sender, EventArgs e) //新郵件
+        {
+
+            Form1.form1.deliverform7();
+            this.Close();
+            this.Dispose(false);
+
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.Enter)
+            {
+                SendKeys.Send("+{ENTER}"); 
+                return true; //控制項焦點會跟著方向鍵改變,false 不會覆寫方法裡的按鍵
+            }
+            return base.ProcessCmdKey(ref msg, keyData); //重載ProcessCmdKey方法
+        }
+
+    }
+}
