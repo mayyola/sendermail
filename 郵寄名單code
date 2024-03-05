@@ -1,0 +1,421 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.OleDb;
+using SendmailTool;
+
+
+namespace sendermail
+{
+
+
+    public partial class Form8 : Form
+    {
+        public Form8()
+        {
+            InitializeComponent();
+
+        }
+
+        public class Datatable  //建立資料庫選單類別 //兩個方法
+
+        { 
+           // OleDbConnection conn;
+            public void Getname(Form8 fm4) //gettablename
+            {
+                ComboBox comboBoxch = new ComboBox();
+                comboBoxch.DropDownStyle = ComboBoxStyle.DropDownList;
+                Label labelch = new Label();
+                Database con = new Database();
+                con.conn.Open();
+                /*var DBPath = Application.StartupPath + "\\database\\email.mdb";
+                conn = new OleDbConnection("provider=Microsoft.Jet.OLEDB.4.0;" + "Data Source=" + DBPath);
+                conn.Open();*/
+                DataTable schemaTable = con.conn.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, new object[] { null, null, null, "TABLE" });
+                //DataTable 中返回的每一列是限制列（TABLE_CATALOG、TABLE_SCHEMA、TABLE_NAME、TABLE_TYPE），后面是 TABLE_GUID、DESCRIPTION、TABLE_PROPID、DATE_CREATED 和 DATE_MODIFIED 的其他架构列。
+                for (int i = 0; i < schemaTable.Rows.Count; i++)
+                {
+                    comboBoxch.Items.Add(schemaTable.Rows[i].ItemArray[2].ToString()); //ItemArray[2] table_name
+                }
+
+                labelch.Text = "類別";
+                comboBoxch.SelectedIndex = 0; //預設值
+                comboBoxch.Size = new Size(300, 26);
+                comboBoxch.Name = "comboboxch";
+                labelch.Size = new Size(40, 26);
+                labelch.Name = "labelch";
+                var comboBoxsize = new FunctionTool();
+                comboBoxch.DropDownWidth = comboBoxsize.ComboboxWidth(comboBoxch); //調整下拉選單寬度
+                labelch.TextAlign = ContentAlignment.MiddleCenter;
+                fm4.tableLayoutPanel1.Controls.Add(comboBoxch, 1, 0);
+                fm4.tableLayoutPanel1.Controls.Add(labelch, 0, 0);
+                con.conn.Close();
+                Tablename tname = new Tablename(); //取得table欄位名稱
+                if (fm4.tableLayoutPanel1.Controls.Count == 2)
+                {
+                    tname.Indexname(fm4, comboBoxch.SelectedItem.ToString()); //預設選單
+                }
+                comboBoxch.SelectedIndexChanged += new EventHandler(comboBoxch_SelectedIndexChanged);
+                void comboBoxch_SelectedIndexChanged(object sender, EventArgs e)
+                {
+                    tname.Indexname(fm4, comboBoxch.SelectedItem.ToString());
+                }
+
+            }
+
+
+        }
+
+        public class Tablename
+        {
+            //OleDbConnection conn;
+            public void Indexname(Form8 fm4, string tablename)
+            {
+                for (int i = fm4.tableLayoutPanel1.Controls.Count - 1; i >= 2; --i)
+                fm4.tableLayoutPanel1.Controls[i].Dispose();  //移除控制項
+                DataTable myDataTable = new DataTable();
+                Database con = new Database();
+                var txtCommand = "SELECT * FROM [" + tablename + "]";
+                OleDbDataAdapter da = new OleDbDataAdapter(txtCommand, con.conn);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                int n = 2; //myDataTable.Columns.Count; 
+                ComboBox[] comboBox = new ComboBox[n];
+                Label[] label = new Label[n];
+                FunctionTool comboBoxsize = new FunctionTool();
+                for (int i = 0; i < n; i++)
+                {
+                    var cmb = new ComboBox();
+                    comboBox[i] = cmb;
+                    comboBox[i].Size = new Size(80, 26);
+                    comboBox[i].Name = "combox" + i;
+                    comboBox[i].Location = new Point(85, 9);
+                    label[i] = new Label();
+                    label[i].Size = new Size(80, 26);
+                    label[i].Name = "label" + i;
+                    label[i].Text = ds.Tables[0].Columns[i + 1].ColumnName;
+                    label[i].Location = new Point(1, 90);
+                    label[i].TextAlign = ContentAlignment.MiddleCenter;
+                    string[] datasypeArray = new string[2];
+                    for (int j = 0; j < ds.Tables[0].Rows.Count; j++) //欄位有幾筆資料
+                    {
+                        var nonrepat = ds.Tables[0].Rows[j][i + 1].ToString();
+                        // string [] datatype  =ds.Tables[0].Rows[j][i + 1].GetType().ToString();//欄位值資料庫表格中2跟3欄位
+                        if (!comboBox[i].Items.Contains(nonrepat))
+                        {
+                            comboBox[i].Items.Add(ds.Tables[0].Rows[j][i + 1].ToString());
+
+                        }
+                    }
+
+                    //調整下拉選單寬度
+                    comboBox[i].DropDownWidth = comboBoxsize.ComboboxWidth(comboBox[i]);
+                    fm4.tableLayoutPanel1.Controls.Add(comboBox[i], i + 2, 0);
+                    fm4.tableLayoutPanel1.Controls.Add(label[i], i + 2, 0);
+                    
+
+                }
+
+
+
+            }
+
+            public void receiver(Form8 fm4)
+            {
+                Form7 frm7 = (Form7)fm4.Owner;
+                frm7.dataGridView1.Refresh();
+                DataTable dt = new DataTable("CommData");
+
+                foreach (DataGridViewColumn dc in fm4.advancedDataGridView1.Columns)
+                {
+
+                    try
+                    {
+                        
+                        if (dc.Index == 0)
+                            dt.Columns.Add(dc.Name, typeof(int));
+                        else
+                            dt.Columns.Add(dc.Name);
+                    }
+
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+
+
+                }
+
+
+                foreach (DataGridViewRow row in fm4.advancedDataGridView1.SelectedRows)
+                {
+
+                    try
+                    {
+
+                        string[] rowindex = new string[fm4.advancedDataGridView1.Columns.Count];
+                        int i;
+                        for (i = 0; i < fm4.advancedDataGridView1.Columns.Count; i++)
+                        {
+
+                            rowindex[i] = row.Cells[i].Value.ToString();
+
+                        }
+                        dt.Rows.Add(rowindex);
+                    }
+
+                    catch (Exception ex)
+                    {
+
+                        MessageBox.Show(ex.Message);
+                    }
+                    dt.DefaultView.Sort = dt.Columns[0].ColumnName;
+                    frm7.dataGridView1.DataSource = dt;
+                    
+                    //frm7.dataGridView1.Sort(frm7.dataGridView1.Columns[0], ListSortDirection.Ascending);
+                }
+            }
+            public void deletereceiver(Form8 fm4, KeyEventArgs e)
+
+            {
+                if (e.KeyCode == Keys.Delete)
+                {
+                    foreach (Control c in fm4.Controls)
+                    {
+                        if (c is ListBox)
+                        {
+
+                            if (((ListBox)c).SelectedIndices.Count > 0)
+
+                                ((ListBox)c).Items.RemoveAt(((ListBox)c).SelectedIndex);
+
+                        }
+                    }
+
+                }
+            }
+
+            public void listboxcount(Form8 fm4)
+            {
+                //string totalcount = (fm4.listBox1.Items.Count + fm4.listBox2.Items.Count + fm4.listBox3.Items.Count).ToString();
+                //fm4.textBox1.Text = totalcount;
+            }
+
+        }
+
+        private void button1_Click(object sender, EventArgs e) //查詢按鈕
+        {
+            string[] combotext = new string[3];
+            string[] labeltext = new string[3];
+            bool[] busLate = new bool[3];
+            int t = 0;
+            int u = 0;
+            foreach (Control ctrl in tableLayoutPanel1.Controls)
+            {
+                string ControlNames = ctrl.Name;
+                string ControlText = ctrl.Text;
+                string Controltype = ctrl.GetType().Name;
+
+                if (ctrl.GetType() == typeof(ComboBox))
+                {
+                    if (String.IsNullOrEmpty(ControlText))
+                    {
+
+                        busLate[t] = true;
+                    }
+
+                    else
+                    {
+
+                        busLate[t] = false;
+                    }
+                    combotext[t] = ControlText;
+                    t++;
+                }
+                else if (ctrl.GetType() == typeof(Label))
+                {
+                    labeltext[u] = ControlText;
+                    u++;
+                }
+            }
+
+            Database con = new Database();
+            con.conn.Open();
+            try
+            {
+                var txtCommand = "SELECT * FROM [" + combotext[0] + "] where [" + labeltext[1] + "]=IIF(" + busLate[1] + "," + labeltext[1] + ",'" + combotext[1] + "') and [" + labeltext[2] + "]=IIF(" + busLate[2] + "," + labeltext[2] + ",'" + combotext[2] + "')";
+                OleDbDataAdapter da = new OleDbDataAdapter(txtCommand, con.conn);
+                DataSet ds = new DataSet(); 
+                da.Fill(ds);
+                advancedDataGridView1.DataSource = ds.Tables[0];
+                //Param.datatable = ds;  //好像不行 因為已經載入了原本的資料
+                Param.Sql_command = txtCommand;
+                advancedDataGridView1.Sort(advancedDataGridView1.Columns[0], ListSortDirection.Ascending); //排序因為識別碼型態是數字20210304
+                MessageBox.Show("總共有" + ds.Tables[0].Rows.Count.ToString() + "資料");
+            }
+
+            catch (Exception ex)
+            {
+
+                MessageBox.Show(ex.Message + "請將資料類型轉為文字");
+
+            }
+
+        }
+
+
+        private void Form8_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                Form8 fm4 = this;
+                Datatable table = new Datatable();
+                table.Getname(fm4); //選擇表單
+            }
+
+            catch (Exception ex) {
+
+               // MessageBox.Show(ex.Message);
+
+            }
+        }
+
+        private void advancedDataGridView1_FilterStringChanged(object sender, EventArgs e) //過濾
+        {
+            BindingSource filterBind = new BindingSource();
+            filterBind.DataSource = advancedDataGridView1.DataSource;
+            filterBind.Filter = this.advancedDataGridView1.FilterString;
+
+        }
+
+        private void advancedDataGridView1_SortStringChanged(object sender, EventArgs e) //勾選
+        {
+            BindingSource sortBind = new BindingSource();
+            sortBind.DataSource = advancedDataGridView1.DataSource;
+            sortBind.Sort = this.advancedDataGridView1.SortString;
+
+        }
+
+        private void button14_Click(object sender, EventArgs e)
+        {
+            int prev = this.advancedDataGridView1.CurrentRow.Index + 1; //下一筆
+            if (prev < this.advancedDataGridView1.RowCount)
+                this.advancedDataGridView1.CurrentCell = this.advancedDataGridView1.Rows[prev].Cells[this.advancedDataGridView1.CurrentCell.ColumnIndex];
+
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            int prev = this.advancedDataGridView1.CurrentRow.Index - 1; //上一筆
+            if (prev > -1)
+                this.advancedDataGridView1.CurrentCell = this.advancedDataGridView1.Rows[prev].Cells[this.advancedDataGridView1.CurrentCell.ColumnIndex];
+
+        }
+
+        private void button8_Click(object sender, EventArgs e) //第一筆
+        {
+            this.advancedDataGridView1.CurrentCell = this.advancedDataGridView1.Rows[0].Cells[this.advancedDataGridView1.CurrentCell.ColumnIndex];
+        }
+
+        private void button10_Click(object sender, EventArgs e) //最後一筆
+        {
+            int prev = this.advancedDataGridView1.RowCount - 1;
+            this.advancedDataGridView1.CurrentCell = this.advancedDataGridView1.Rows[prev].Cells[this.advancedDataGridView1.CurrentCell.ColumnIndex];
+        }
+
+        private void button11_Click(object sender, EventArgs e) //全選
+        {
+            advancedDataGridView1.SelectAll();
+        }
+
+        private void button13_Click(object sender, EventArgs e)
+        {
+            this.Dispose();
+        }
+
+        private void button12_Click(object sender, EventArgs e)  //確定按鈕
+        {
+            
+            try
+            {
+             Form8 fm8 = this;
+             Tablename poplistbox = new Tablename();
+             poplistbox.receiver(fm8);
+             this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("修改資料庫不要按這邊拉!");
+                return;
+            }
+           
+        }
+
+        private void advancedDataGridView1_SelectionChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                Int32 selectedRowCount = advancedDataGridView1.Rows.GetRowCount(DataGridViewElementStates.Selected);
+                if (selectedRowCount > 0)
+                {
+                    this.textBox1.Text = selectedRowCount.ToString();
+                }
+
+            }
+
+            catch (Exception ex) {
+
+                MessageBox.Show(ex.Message);
+
+            }
+
+        }
+
+        /*public DataSet DataSet
+        {
+            get;set;
+
+        }*/
+
+        private void advancedDataGridView1_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+          
+            Param.Index_select = e.RowIndex;
+            //Param.Index_select = Convert.ToUInt16(this.advancedDataGridView1.Rows[e.RowIndex].Cells[0].Value); //第幾列@@
+            string Table_Name = this.tableLayoutPanel1.Controls[0].Text; //table名稱
+            var txtCommand = "SELECT * FROM [" + Table_Name + "] where 識別碼="+ this.advancedDataGridView1.Rows[e.RowIndex].Cells[0].Value;
+            
+            Database con = new Database();
+            OleDbDataAdapter da = new OleDbDataAdapter(txtCommand, con.conn);
+            DataSet ds = new DataSet();
+            da.Fill(ds,Table_Name);
+            Form10 fm10 = new Form10(ds,0); //帶參數
+            fm10.Owner = this;
+            fm10.ShowDialog(); //母視窗不能點閱
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            string Table_Name = this.tableLayoutPanel1.Controls[0].Text;//table名稱
+                                                                        
+            var txtCommand = "SELECT * FROM " + Table_Name; //@ @ top1
+            Param.Sql_command = txtCommand;
+            Database con = new Database();
+            OleDbDataAdapter da = new OleDbDataAdapter(txtCommand, con.conn);
+            DataSet ds = new DataSet();
+            da.Fill(ds,Table_Name);
+            advancedDataGridView1.DataSource = ds.Tables[0];
+            Form10 fm10=new Form10(ds,1);
+            fm10.Owner = this;
+            fm10.ShowDialog();
+        }
+    }
+}
