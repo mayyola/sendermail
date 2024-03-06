@@ -30,39 +30,6 @@ namespace sendermail
 
         }
 
-
-        public string Sendname //寄件者名字
-
-        {
-            get; set;
-
-        }
-
-        public string Senderemail //寄件者email
-
-        {
-            get; set;
-        }
-
-        public string Mailsmtp //寄件者Smtp
-
-        {
-            get; set;
-        }
-
-        public string Mailaccount //寄件者帳號
-
-        {
-            get; set;
-        }
-
-        public string Mailpw //寄件者密碼
-
-        {
-            get; set;
-        }
-
-
         public class Submethod  //附件類別
         {
             public void Attachment(Form7 f2) //建構函式 方法
@@ -79,7 +46,8 @@ namespace sendermail
                     {
                         totalsize += new FileInfo(item).Length;
 
-                        f2.Attlist.Items.Add(item + "(" + (new FileInfo(item).Length / 1024).ToString() + "kB)"); //增加到listbox
+                        //  f2.Attlist.Items.Add(item + "(" + (new FileInfo(item).Length / 1024).ToString() + "kB)"); //增加到listbox
+                        f2.Attlist.Items.Add($"{item}({(new FileInfo(item).Length / 1024)}kB)");
                     }
                     f2.label1.Text = (totalsize + Convert.ToInt64(f2.label1.Text)).ToString();//只有增加沒辦法減少
                     if (Convert.ToInt64(f2.label1.Text) > 15000000)
@@ -268,7 +236,7 @@ namespace sendermail
                                     }
                                     bodyBuilder.HtmlBody = Mail_content;
 
-                                    MessageBox.Show(Mail_content);
+                                    //MessageBox.Show(Mail_content);
                                     if (Clipboard.ContainsImage())   //應該可以刪除 1121111
                               
                                     {
